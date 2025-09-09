@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Zigzag Cipher App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script>
+        function toggleFields() {
+            const mode = document.getElementById("mode").value;
+            const encryptFields = document.getElementById("encrypt-fields");
+            const submitBtn = document.getElementById("submitBtn");
+
+            if (mode === "encrypt") {
+                encryptFields.style.display = "block";
+                submitBtn.innerText = "Simpan";
+                document.getElementById("validation-rules").style.display = "block";
+            } else {
+                encryptFields.style.display = "none";
+                submitBtn.innerText = "Proses";
+                document.getElementById("validation-rules").style.display = "none";
+            }
+        }
+
+        function togglePassword() {
+            const pwdField = document.getElementById("password");
+            const icon = document.getElementById("toggleIcon");
+
+            if (pwdField.type === "password") {
+                pwdField.type = "text";
+                icon.innerHTML = "🙈";
+            } else {
+                pwdField.type = "password";
+                icon.innerHTML = "👁️";
+            }
+        }
+
+        function validatePassword() {
+            const password = document.getElementById("password").value;
+
+            const rules = {
+                length: password.length >= 8,
+                special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+                capital: /^[A-Z]/.test(password)
+            };
+
+            document.getElementById("rule-length").innerHTML = rules.length ? "✅ Minimal 8 karakter" : "❌ Minimal 8 karakter";
+            document.getElementById("rule-special").innerHTML = rules.special ? "✅ Ada karakter khusus" : "❌ Ada karakter khusus";
+            document.getElementById("rule-capital").innerHTML = rules.capital ? "✅ Diawali huruf kapital" : "❌ Diawali huruf kapital";
+        }
+    </script>
+</head>
+<body class="bg-light" onload="toggleFields()">
+<div class="container mt-5">
+    <div class="row g-4">
+        <!-- Form -->
+        <div class="col-md-6">
+            <div class="card shadow p-3">
+                <h4 class="text-center"> Zigzag Cipher</h4>
+                <form method="POST" class="mt-3">
+                    <div class="mb-2">
+                        <label class="form-label">Pilih Mode</label>
+                        <select class="form-select" id="mode" name="mode" onchange="toggleFields()" required>
+                            <option value="encrypt">Enkripsi</option>
+                            <option value="decrypt">Dekripsi</option>
+                        </select>
+                    </div>
+
+                    <div id="encrypt-fields">
+                        <div class="mb-2">
+                            <label class="form-label">Nama</label>
+                            <input type="text" class="form-control" name="nama" placeholder="Masukkan nama">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">NIM</label>
+                            <input type="text" class="form-control" name="nim" placeholder="Masukkan NIM">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Jenis Kelamin</label>
+                            <select class="form-select" name="jk">
+                                <option value="Laki-laki">Laki-laki</option>
+                                <option value="Perempuan">Perempuan</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Password / Cipher</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Masukkan password atau cipher" onkeyup="validatePassword()" required>
+                            <button type="button" class="btn btn-outline-secondary" onclick="togglePassword()">
+                                <span id="toggleIcon">👁️</span>
+                            </button>
+                        </div>
+                        <div id="validation-rules" class="form-text mt-2">
+                            <ul>
+                                <li id="rule-length">❌ Minimal 8 karakter</li>
+                                <li id="rule-special">❌ Ada karakter khusus</li>
+                                <li id="rule-capital">❌ Diawali huruf kapital</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label">Jumlah Rail</label>
+                        <input type="number" class="form-control" name="rail" min="2" value="3" required>
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="btn btn-primary w-100">Simpan</button>
+                </form>
+
+                {% if error %}
+                <div class="alert alert-danger mt-3">{{ error }}</div>
+                {% endif %}
+
+                {% if result %}
+                <div class="alert alert-success mt-3">
+                    <b>Hasil:</b> {{ result }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Data Mahasiswa -->
+        <div class="col-md-6">
+            <div class="card shadow p-3">
+                <h4 class="text-center">📋 Data Mahasiswa</h4>
+                <table class="table table-sm table-bordered table-striped mt-3">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nama</th>
+                            <th>NIM</th>
+                            <th>JK</th>
+                            <th>Cipher</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in mahasiswa %}
+                        <tr>
+                            <td>{{ m[0] }}</td>
+                            <td>{{ m[1] }}</td>
+                            <td>{{ m[2] }}</td>
+                            <td>{{ m[3] }}</td>
+                            <td>{{ m[4] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
