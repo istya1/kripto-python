@@ -73,6 +73,35 @@ def decrypt_rail_fence(cipher, key):
         row += 1 if dir_down else -1
     return "".join(result)
 
+# ---------- VIGENERE CIPHER ----------
+def vigenere_encrypt(plain_text, key):
+    key = key.upper()
+    plain_text = plain_text.upper()
+    cipher_text = ""
+    key_index = 0
+    for char in plain_text:
+        if char.isalpha():
+            shift = ord(key[key_index % len(key)]) - ord('A')
+            cipher_text += chr((ord(char) - ord('A') + shift) % 26 + ord('A'))
+            key_index += 1
+        else:
+            cipher_text += char
+    return cipher_text
+
+def vigenere_decrypt(cipher_text, key):
+    key = key.upper()
+    cipher_text = cipher_text.upper()
+    plain_text = ""
+    key_index = 0
+    for char in cipher_text:
+        if char.isalpha():
+            shift = ord(key[key_index % len(key)]) - ord('A')
+            plain_text += chr((ord(char) - ord('A') - shift + 26) % 26 + ord('A'))
+            key_index += 1
+        else:
+            plain_text += char
+    return plain_text
+
 # ---------- ROUTES ----------
 @app.route("/")
 def landing():
@@ -120,6 +149,45 @@ def zigzag():
 
     return render_template("zigzag.html", result=result, error=error, mahasiswa=mahasiswa_list)
 
+@app.route("/vigenere", methods=["GET", "POST"])
+def vigenere():
+    result, error = None, None
+
+    if request.method == "POST":
+        mode = request.form["mode"]
+        password = request.form["password"]  # teks input
+        key = request.form["key"]           # kunci Vigenere
+
+        try:
+            if mode == "encrypt":
+                nama = request.form["nama"]
+                nim = request.form["nim"]
+                jk = request.form["jk"]
+
+                cipher = vigenere_encrypt(password, key)
+
+                conn = sqlite3.connect("mahasiswa.db")
+                c = conn.cursor()
+                c.execute("INSERT INTO mahasiswa (nama, nim, jk, password) VALUES (?, ?, ?, ?)",
+                          (nama, nim, jk, cipher))
+                conn.commit()
+                conn.close()
+
+                result = cipher
+
+            elif mode == "decrypt":
+                result = vigenere_decrypt(password, key)
+
+        except Exception as e:
+            error = str(e)
+
+    conn = sqlite3.connect("mahasiswa.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM mahasiswa")
+    mahasiswa_list = c.fetchall()
+    conn.close()
+
+    return render_template("vigenere.html", result=result, error=error, mahasiswa=mahasiswa_list)
 
 if __name__ == "__main__":
     init_db()
