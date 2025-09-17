@@ -2,6 +2,10 @@ from flask import Flask, render_template, request
 import sqlite3
 import random
 import math
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+import hashlib
+import base64
 
 app = Flask(__name__)
 
@@ -104,6 +108,26 @@ def vigenere_decrypt(cipher_text, key):
             plain_text += char
     return plain_text
 
+# ---------- AES CIPHER ----------
+def encrypt_aes(plaintext, key_str):
+    """Mengenkripsi plaintext menggunakan AES."""
+    key = hashlib.sha256(key_str.encode()).digest()
+    cipher = AES.new(key, AES.MODE_ECB)
+    padded_data = pad(plaintext.encode(), AES.block_size)
+    ciphertext = cipher.encrypt(padded_data)
+    return base64.b64encode(ciphertext).decode('utf-8')
+
+def decrypt_aes(ciphertext_b64, key_str):
+    """Mendekripsi ciphertext menggunakan AES."""
+    try:
+        key = hashlib.sha256(key_str.encode()).digest()
+        cipher = AES.new(key, AES.MODE_ECB)
+        ciphertext = base64.b64decode(ciphertext_b64)
+        padded_data = cipher.decrypt(ciphertext)
+        return unpad(padded_data, AES.block_size).decode('utf-8')
+    except (ValueError, KeyError) as e:
+        return f"Error Dekripsi: {e}"
+
 # ---------- RSA IMPLEMENTATION ----------
 def gcd(a, b):
     while b != 0:
@@ -204,7 +228,7 @@ def vigenere():
     if request.method == "POST":
         mode = request.form["mode"]
         password = request.form["password"]  # teks input
-        key = request.form["key"]           # kunci Vigenere
+        key = request.form["key"]            # kunci Vigenere
 
         try:
             if mode == "encrypt":
@@ -236,6 +260,51 @@ def vigenere():
     conn.close()
 
     return render_template("vigenere.html", result=result, error=error, mahasiswa=mahasiswa_list)
+
+@app.route("/aes", methods=["GET", "POST"])
+def aes():
+    result, error = None, None
+
+    if request.method == "POST":
+        mode = request.form["mode"]
+        password = request.form["password"]
+        
+        try:
+            if mode == "encrypt":
+                nama = request.form["nama"]
+                nim = request.form["nim"]
+                jk = request.form["jk"]
+                
+                # Gabungkan data untuk dienkripsi
+                data_to_encrypt = f"Nama: {nama}, NIM: {nim}, JK: {jk}"
+                cipher = encrypt_aes(data_to_encrypt, password)
+
+                conn = sqlite3.connect("mahasiswa.db")
+                c = conn.cursor()
+                c.execute("INSERT INTO mahasiswa (nama, nim, jk, password) VALUES (?, ?, ?, ?)",
+                          (nama, nim, jk, cipher))
+                conn.commit()
+                conn.close()
+                
+                result = f"Ciphertext: {cipher}"
+            
+            elif mode == "decrypt":
+                # Ambil ciphertext dan key dari form
+                ciphertext = request.form["password"] # Password field digunakan untuk ciphertext saat dekripsi
+                decrypted_data = decrypt_aes(ciphertext, password)
+                
+                result = f"Plaintext: {decrypted_data}"
+
+        except Exception as e:
+            error = f"Error: {e}. Pastikan password dan ciphertext benar."
+
+    conn = sqlite3.connect("mahasiswa.db")
+    c = conn.cursor()
+    c.execute("SELECT * FROM mahasiswa")
+    mahasiswa_list = c.fetchall()
+    conn.close()
+
+    return render_template("aes.html", result=result, error=error, mahasiswa=mahasiswa_list)
 
 @app.route("/rsa", methods=["GET", "POST"])
 def rsa():
